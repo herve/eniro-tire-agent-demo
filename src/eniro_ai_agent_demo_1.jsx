@@ -22,7 +22,7 @@ const companies = [
     "address": "Årsta Skolgränd 12, 117 43 Stockholm",
     "fit": 92,
     "tag": "Däckhotell",
-    "reason": "Bra val om kunden vill kombinera däckbyte med förvaring.",
+    "reason": "Bra val om kunden vill ha flexibel tid. Däckhotell finns men behövs inte i detta scenario.",
     "price": "799–1 499 kr",
     "times": [
       "Imorgon 09:30",
@@ -50,7 +50,7 @@ const companies = [
 const steps = ["home", "diagnose", "matching", "results", "booking", "confirmed"];
 const typedProblem = "Jag behöver byta till vinterdäck innan 1 december nära Liljeholmen";
 const popularItems = ["Däckbyte", "Bilservice", "Däckhotell", "Bilbesiktning"];
-const matchingBullets = ["Identifierar däckverkstäder", "Prioriterar tider före 1 december", "Matchar däckbyte, balansering och däckhotell"];
+const matchingBullets = ["Identifierar däckverkstäder", "Prioriterar tider före 1 december", "Matchar däckbyte och balansering utan däckhotell"];
 
 const diagnosisChips = [
     { icon: "CalendarDays", title: "Deadline", text: "Byt innan 1 december för att undvika sista-minuten-brist." },
@@ -59,8 +59,8 @@ const diagnosisChips = [
 ];
 
 const agentContent = {
-    "diagnose": "Du behöver byta till vinterdäck före deadline. Jag prioriterar verkstäder med lediga tider snabbt och möjlighet till återkommande vårbokning.",
-    "matching": "Jag söker däckverkstäder nära Liljeholmen med lediga tider före 1 december.",
+    "diagnose": "Du behöver byta till vinterdäck före deadline. Behöver du också däckhotell?",
+    "matching": "Jag söker däckverkstäder nära Liljeholmen med lediga tider före 1 december. Jag filtrerar på däckbyte utan däckhotell.",
     "results": "3 verkstäder har tider inom kort. Estimerat pris för däckbyte: cirka 699–1 199 kr.",
     "booking": "Välj en tid eller be verkstaden ringa upp. Du kan även lägga till däckhotell som återkommande tjänst.",
     "confirmed": "Bokningsförfrågan skickad. Verkstaden ringer dig för att bekräfta tiden."
@@ -174,33 +174,83 @@ function Hero({ query, setQuery, step, next }) {
                     <span className="rounded-full bg-[#e8f4f6] px-3 py-1">AI Eniro</span>
                     <span className="text-[#557078]">Analyserar behov och hittar tillgängliga tider</span>
                   </div>
-                  <AgentPanelStep step={step} />
+                  <AgentPanelStep step={step} onNext={next} />
                 </motion.div>
               )}
             </AnimatePresence>
           </motion.div>
 
           {!agentOpen && (
-            <div className="mt-5 flex flex-wrap justify-center gap-2 text-sm">
-              {popularItems.map((x) => (
-                <button key={x} className="rounded-full border border-white/60 px-4 py-2 backdrop-blur-sm">{x}</button>
-              ))}
-            </div>
+            <>
+              <PersonalizedTirePrompt onStart={next} />
+              <div className="mt-5 flex flex-wrap justify-center gap-2 text-sm">
+                {popularItems.map((x) => (
+                  <button key={x} className="rounded-full border border-white/60 px-4 py-2 backdrop-blur-sm">{x}</button>
+                ))}
+              </div>
+            </>
           )}
 
-          {!query && !agentOpen && (
-            <button onClick={() => setQuery(typedProblem)} className="mt-5 rounded-full bg-white/15 px-4 py-2 text-sm backdrop-blur-sm">
-              Demo: fyll i vinterdäck-behovet
-            </button>
-          )}
         </div>
       </div>
     </section>
   );
 }
 
-function AgentPanelStep({ step }) {
-  return <p className="text-lg leading-relaxed">{agentContent[step] || "Beskriv ditt behov direkt i sökfältet."}</p>;
+function PersonalizedTirePrompt({ onStart }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mt-5 w-full rounded-[1.5rem] bg-[#dff1f4] p-6 text-[#062f38] shadow-xl md:p-8"
+    >
+      <p className="text-sm font-semibold uppercase tracking-wide text-[#557078]">Personlig påminnelse</p>
+      <h1 className="mt-3 text-3xl font-bold leading-tight md:text-4xl">Hej Thomas,</h1>
+      <div className="mt-4 space-y-3 text-lg leading-relaxed">
+        <p>Det är snart dags att byta till vinterdäck.</p>
+        <p>Sista dagen är den 1 december.</p>
+        <p>
+          Vill du att Eniro hittar en verkstad nära Liljeholmen med snabba lediga tider och möjlighet till
+          återkommande vårbokning?
+        </p>
+      </div>
+      <button
+        onClick={onStart}
+        className="mt-6 rounded-full bg-[#062f38] px-6 py-3 font-bold text-white transition hover:scale-105"
+      >
+        Hitta lediga tider
+      </button>
+    </motion.div>
+  );
+}
+
+function AgentPanelStep({ step, onNext }) {
+  return (
+    <div>
+      <p className="text-lg leading-relaxed">{agentContent[step] || "Beskriv ditt behov direkt i sökfältet."}</p>
+
+      {step === "diagnose" && (
+        <div className="mt-5 rounded-[1.5rem] bg-[#dff1f4] p-5 text-[#062f38]">
+          <p className="text-lg font-bold">Behöver du däckhotell?</p>
+          <p className="mt-2 text-sm text-[#557078]">
+            Det påverkar vilka verkstäder jag söker efter. I den här demon säger Thomas nej.
+          </p>
+
+          <div className="mt-4 flex gap-3">
+            <button className="rounded-full border border-[#062f38]/30 bg-white px-5 py-2 font-semibold text-[#062f38]">
+              Ja
+            </button>
+            <button
+              onClick={onNext}
+              className="rounded-full bg-[#062f38] px-5 py-2 font-semibold text-white transition hover:scale-105"
+            >
+              Nej
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function DemoControls({ stepIndex, progress, prev, next, restart }) {
@@ -248,7 +298,7 @@ function Diagnosis() {
           <Chip key={chip.title} iconName={chip.icon} title={chip.title} text={chip.text} />
         ))}
       </div>
-      <div className="mt-6 rounded-2xl bg-[#f6f6f1] p-5 font-semibold">Rekommendation: boka däckverkstad med ledig tid före deadline och möjlighet till däckhotell.</div>
+      <div className="mt-6 rounded-2xl bg-[#f6f6f1] p-5 font-semibold">Rekommendation: boka däckverkstad med ledig tid före deadline. Däckhotell behövs inte.</div>
     </motion.section>
   );
 }
